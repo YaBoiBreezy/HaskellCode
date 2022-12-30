@@ -1,0 +1,59 @@
+Haskell C:
+func = \x y -> x+y
+cond x y z = if z then y else z
+
+func a = case a of
+  Tree -> 0
+  Null -> 1
+
+&&, ||, ==, /=
+
+func a = do
+  b <- func' a
+  return a++b
+
+e1 >> (e2 >>= \x2 -> (e3 >>= \x3 -> (e4 >> return (f x2 x3))))
+
+instance Tree a where
+ depth (Leaf x) = 0
+ depth (Node x l1 l2) = max (depth x, max((depth l1),(depth l2)))
+
+lists:
+instance Depth a => Depth [a] where
+ depth l = foldr max 0 (map depth l)    --max depth of elements in a
+
+maybe monad:
+depChq val customer = do
+ currAmount <- getChq c
+ return (setChq (val+currAmount) customer)
+
+chqToSav amount customer = do
+ bal1 <- getChq customer
+ bal2 <- getSav customer
+ failIf (amount>bal1)
+ return (setAccts (bal1-amount) (bal2+amount) customer)
+
+state transformer:
+seqMany sts = foldr seq (return ()) sts
+
+loopFor 0 st = return ()
+loopFor n st = st << loopFor (n=1) st
+OR
+loopFor n st = take n (repeat st)   --infinite list of st's, take n of them
+
+Lambda calculus:
+actual SKK should be everything except z.
+Take fx, go out until you find yf. Same for g. z is free
+
+S=Lfgx.fx(gx)
+SKK
+S applied to K (redex)
+expand letters into what they stand for
+=Lg.Lx.K(gx))K  //plugging in K for f
+=Lx.K(Kx)
+
+Lg.Lx.Kx(gx)K
+Lx.Kx(Kx)
+Lx.(LxLg.x)x(Kx)
+Lx.(Lg.x)(Kx)
+Lx.x

@@ -1,0 +1,20 @@
+dmult :: N -> N -> N
+dmult = \m -> \n -> cond (eq m 0) 0 (add n (dmult (sub m 1) n))
+
+  [dmult] 2 5
+= [(\m -> \n -> cond (eq m 0) 0 (add n (dmult (sub m 1) n))) 2 5]
+= cond [(eq 2 0)] 0 (add 5 (dmult (sub 2 1) 5))
+= [cond False 0 (add 5 (dmult (sub 2 1) 5))]
+= add 5 (dmult [(sub 2 1)] 5)
+= add 5 ([dmult] 1 5)
+= add 5 ([(\m -> \n -> cond (eq m 0) 0 (add n (dmult (sub m 1) n))) 1 5])
+= add 5 (cond [(eq 1 0)] 0 (add 5 (dmult (sub 1 1) 5)))
+= add 5 [(cond False 0 (add 5 (dmult (sub 1 1) 5)))]
+= add 5 (add 5 (dmult [(sub 1 1)] 5))
+= add 5 (add 5 ([dmult] 0 5))
+= add 5 (add 5 ([(\m -> \n -> cond (eq m 0) 0 (add n (dmult (sub m 1) n))) 0 5]))
+= add 5 (add 5 (cond [(eq 0 0)] 0 (add 5 (dmult (sub 0 1) 5))))
+= add 5 (add 5 [(cond True 0 (add 5 (dmult (sub 0 1) 5)))])
+= add 5 [(add 5 0)]
+= [add 5 5]
+= 10

@@ -1,0 +1,69 @@
+---------------------------------------
+
+egL = parse "%x. x z (%y. x y)"
+
+-- Paths through abstract syntax trees. See subtermAt below.
+type Path = [Bool]
+
+-- The function subtermAt can be taken as a specification of what paths mean.
+-- A path starts at the top of the term and ends at the subterm subtermAt
+-- accesses. E.g.:
+-- subtermAt egL [False,False,True] = Var "z"
+subtermAt :: L -> Path -> L
+subtermAt eg [] = eg
+subtermAt (Lam str egL) (a:path) = subtermAt egL path
+subtermAt (App egL egR) (True:path) = subtermAt egR path
+subtermAt (App egL egR) (False:path) = subtermAt egL path
+
+-- Follow the path and change the subterm at the end of the path by applying f
+-- to it. E.g.: pp $ mapAt (const $ Var "u") egL [False,False,True] = "%x. x u
+-- (%y. x y)"
+mapAt :: (L -> L) -> L -> Path -> L
+mapAt f eg [] = f eg
+mapAt f (Lam str egL) (a:path) = Lam str (mapAt f egL path)
+mapAt f (App egL egR) (True:path) = App egL (mapAt f egR path)
+mapAt f (App egL egR) (False:path) = App (mapAt f egL path) egR
+
+-- True if the path leads to a free variable of the term, otherwise false.
+-- isFreeVarAt egL [False,False,True] = True
+-- isFreeVarAt egL [False,False,False] = False
+isFreeVarAt :: L -> Path -> Bool
+isFreeVarAt (Var str) [] = True
+isFreeVarAt _ [] = False
+isFreeVarAt (Var str) (a:path) = False
+isFreeVarAt (Lam str egL) (a:path) = let Var str2 = subtermAt egL path 
+                                     in if (str == str2) then False else (isFreeVarAt egL path)
+isFreeVarAt (App egL egR) (True:path) = isFreeVarAt egR path
+isFreeVarAt (App egL egR) (False:path) = isFreeVarAt egL path
+
+-- Perform a beta reduction at the subterm indicated by the path; if the subterm
+-- is not a beta redex, do nothing.
+betaReduceAt :: L -> Path -> L
+betaReduceAt eg path = mapAt betaReduce eg path
+
+-- A list of all paths leading to an outermost beta redex. A beta redex is
+-- outermost if it is not contained in another redex.
+betaRedexPaths :: L -> [Path]
+betaRedexPaths eg = bet eg []
+
+bet :: L -> Path -> [Path]
+bet (Var str) path = []
+bet (Lam str egL) path = []
+bet (App (Lam str1 m) (Var str2)) path = [path]
+bet (App egL egR) path = (bet egR (path++[True]))++(bet egL (path++[False]))
+
+-- The leftmost of the outermost redex paths, or Nothing if there are no
+-- redexes. A path p1 is "left" of another path p2 if the endpoint of p1 is to the
+-- left of the endpoint of p2 in the abstract syntax tree, or, equivalently, in
+-- a pretty-printing of the term.
+leftmostBetaRedexPath :: L -> Maybe Path
+leftmostBetaRedexPath m = let (path:paths) = betaRedexPaths m
+                          in if (length paths == 0) then Nothing else (Just path)
+
+-- Compute a normal form for L by repeatedly contracting leftmost-outermost
+-- redexes.
+normalize :: L -> L
+normalize m = handleRet m (leftmostBetaRedexPath m)
+
+handleRet eg Nothing = eg
+handleRet eg (Just path) = normalize (betaReduceAt eg path)
